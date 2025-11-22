@@ -1,7 +1,18 @@
 // 引入需要的套件
 const { Client, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
+const express = require('express');
 
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('機器人正在運行中...');
+});
+
+app.listen(port, () => {
+  console.log(`網頁伺服器已啟動，監聽 Port: ${port}`);
+});
 // ==========================================
 // 👇 請在下方填入你的資料 👇
 // ==========================================
