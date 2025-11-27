@@ -15,7 +15,7 @@ app.listen(port, () => { console.log(`網頁伺服器已啟動，監聽 Port: ${
 // ==========================================
 const TOKEN = process.env.DISCORD_TOKEN;
 const WEBSITE_URL = 'https://oop.seilab.uk/'; // 你的網址
-const CHANNEL_ID = '你的頻道ID'; // 記得確認你的頻道 ID 是否還在程式碼裡，如果是用環境變數就寫 process.env.CHANNEL_ID
+const CHANNEL_ID = '1441682465122025504'; // 記得確認你的頻道 ID 是否還在程式碼裡，如果是用環境變數就寫 process.env.CHANNEL_ID
 
 // 🔥 修改 1: 設定檢查頻率和確認次數
 const CHECK_INTERVAL = 10000; // 10秒檢查一次
