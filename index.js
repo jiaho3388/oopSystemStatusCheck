@@ -97,4 +97,4 @@ client.once('ready', () => {
     setInterval(checkWebsite, CHECK_INTERVAL);
 });
 
-client.login(TOKEN);git
+client.login(TOKEN);
