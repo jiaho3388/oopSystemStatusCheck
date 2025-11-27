@@ -253,32 +253,26 @@ client.once('ready', () => {
 });
 
 /**
- * 🔥 註冊斜線指令到 Discord 伺服器 (只需要執行一次)
+ * 🔥 註冊斜線指令到單一目標伺服器
  */
 function registerSlashCommands() {
-    const CLIENT_ID = process.env.CLIENT_ID; // 確保你有設定這個環境變數
+    const CLIENT_ID = process.env.CLIENT_ID;
+    const GUILD_ID = process.env.GUILD_ID; // 🔥 新增：從環境變數讀取伺服器 ID
 
-    if (!CLIENT_ID || !DISCORD_TOKEN) {
-        console.error('❌ 無法註冊指令：請設定環境變數 CLIENT_ID 和 DISCORD_TOKEN。');
+    if (!CLIENT_ID || !DISCORD_TOKEN || !GUILD_ID) {
+        console.error('❌ 無法註冊指令：請設定 CLIENT_ID, DISCORD_TOKEN, 和 GUILD_ID。');
         return;
     }
     
     const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
     
-    // 這裡使用 Guilds API 註冊指令，只會在你的伺服器出現
-    // 為了簡單起見，我們將指令註冊到所有機器人所在的伺服器 (這假設 Bot 只在一個伺服器)
-    client.guilds.cache.forEach(async guild => {
-        try {
-            console.log(`嘗試在伺服器 ${guild.name} 註冊指令...`);
-            await rest.put(
-                Routes.applicationGuildCommands(CLIENT_ID, guild.id),
-                { body: commands },
-            );
-            console.log(`✅ 伺服器 ${guild.name} 指令註冊完成！`);
-        } catch (error) {
-            console.error(`❌ 伺服器 ${guild.name} 指令註冊失敗:`, error);
-        }
-    });
+    // 這裡只針對單一 Guild ID 註冊指令
+    rest.put(
+        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+        { body: commands },
+    )
+    .then(() => console.log(`✅ 成功在目標伺服器 ${GUILD_ID} 註冊指令！`))
+    .catch(error => console.error(`❌ 指令註冊失敗:`, error));
 }
 
 client.login(DISCORD_TOKEN);
