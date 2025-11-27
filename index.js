@@ -1,118 +1,100 @@
-// 引入需要的套件
 const { Client, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
 const express = require('express');
 
+// ==========================================
+// Express 網頁伺服器設定 (這段不用動)
+// ==========================================
 const app = express();
 const port = process.env.PORT || 3000;
+app.get('/', (req, res) => { res.send('機器人正在運行中...'); });
+app.listen(port, () => { console.log(`網頁伺服器已啟動，監聽 Port: ${port}`); });
 
-app.get('/', (req, res) => {
-  res.send('機器人正在運行中...');
-});
-
-app.listen(port, () => {
-  console.log(`網頁伺服器已啟動，監聽 Port: ${port}`);
-});
 // ==========================================
-// 👇 請在下方填入你的資料 👇
+// 👇 設定區域 👇
 // ==========================================
-
-// 1. 你的 Discord 機器人 Token (請妥善保管，不要外流)
 const TOKEN = process.env.DISCORD_TOKEN;
+const WEBSITE_URL = 'https://oop.seilab.uk/'; // 你的網址
+const CHANNEL_ID = '你的頻道ID'; // 記得確認你的頻道 ID 是否還在程式碼裡，如果是用環境變數就寫 process.env.CHANNEL_ID
 
-// 2. 你要監控的網站網址
-const WEBSITE_URL = 'https://oop.seilab.uk/'; // 測試用，之後可以換成你的網站
-
-// 3. 你要發送通知的頻道 ID (右鍵頻道 -> 複製 ID)
-const CHANNEL_ID = '1441682465122025504';
-
-// 4. 檢查頻率 (毫秒) - 這裡設為 10 秒檢查一次方便你測試，之後可以改 300000 (5分鐘)
-const CHECK_INTERVAL = 10000; 
+// 🔥 修改 1: 設定檢查頻率和確認次數
+const CHECK_INTERVAL = 10000; // 10秒檢查一次
+const CONFIRM_THRESHOLD = 3;  // 🔥 累積 3 次才發送通知
 
 // ==========================================
-// 👆 設定結束 👆
-// ==========================================
 
-// 初始化機器人
-const client = new Client({ 
-    intents: [GatewayIntentBits.Guilds] // 只需要最基本的權限
-});
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-// 變數：用來記錄「上一次」的狀態
-// null = 剛啟動，還不知道狀態
-// true = 網站活著 (Online)
-// false = 網站掛了 (Offline)
-let lastStatus = null;
+// 🔥 修改 2: 新增一個計數器變數
+let lastConfirmedStatus = null; // 上一次「已確認發送通知」的狀態
+let changeCounter = 0;          // 用來計算連續次數的計數器
 
-// 核心功能：檢查網站狀態
 async function checkWebsite() {
-    // 取得目標頻道
     const channel = client.channels.cache.get(CHANNEL_ID);
-    if (!channel) {
-        console.log("找不到頻道！請確認 CHANNEL_ID 是否正確，且機器人已加入該伺服器。");
-        return;
-    }
+    if (!channel) return;
 
-    let currentStatus = false; // 暫定當前狀態是死的
+    let currentCheckResult = false; // 這次檢查的結果 (預設 false)
 
     try {
-        // 嘗試連線網站 (設定 5 秒超時)
-        const response = await axios.get(WEBSITE_URL, { timeout: 5000 });
+        // 加上 User-Agent 偽裝
+        const response = await axios.get(WEBSITE_URL, { 
+            timeout: 10000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' }
+        });
         
-        // 如果狀態碼是 200~299，代表活著
         if (response.status >= 200 && response.status < 300) {
-            currentStatus = true;
+            currentCheckResult = true; // 活著
         }
     } catch (error) {
-        // 連線失敗 (超時、網址錯誤、伺服器掛掉)
-        currentStatus = false;
-        console.log(`檢查失敗: ${error.message}`);
+        currentCheckResult = false; // 掛了
+        // console.log(`檢查失敗: ${error.message}`); // 想看 log 可以打開
     }
 
     // ==========================================
-    // 邏輯判斷：只有狀態「改變」時才說話
+    // 🔥 修改 3: 防抖動邏輯 (核心修改)
     // ==========================================
-    
-    // 如果是機器人剛啟動第一次檢查
-    if (lastStatus === null) {
-        lastStatus = currentStatus;
-        console.log(`[初始化] 機器人啟動，目前網站狀態: ${currentStatus ? '🟢 正常' : '🔴 異常'}`);
-        // 第一次通常不發通知，避免重啟機器人時一直洗版，
-        // 如果你想第一次也通知，可以在這裡加 code。
+
+    // 剛啟動時的初始化
+    if (lastConfirmedStatus === null) {
+        lastConfirmedStatus = currentCheckResult;
+        console.log(`[初始化] 目前狀態: ${currentCheckResult ? '🟢' : '🔴'}`);
         return;
     }
 
-    // 如果狀態真的改變了 (例如從 true 變 false，或 false 變 true)
-    if (currentStatus !== lastStatus) {
-        
-        if (currentStatus === true) {
-            // 💀 -> 🟢 復活了
-            await channel.send(`🟢 **服務恢復通知**\n網站 **${WEBSITE_URL}** 已經恢復連線！`);
-            console.log("狀態變更：網站恢復連線");
-        } else {
-            // 🟢 -> 💀 掛掉了
-            await channel.send(`🔴 **服務中斷警報**\n網站 **${WEBSITE_URL}** 目前無法連線，請檢查伺服器狀態。`);
-            console.log("狀態變更：網站連線失敗");
-        }
+    // 情況 A: 這次檢查結果 跟 上次確認的狀態「不一樣」
+    if (currentCheckResult !== lastConfirmedStatus) {
+        changeCounter++; // 計數器 +1
+        console.log(`⚠️ 狀態不穩或改變中... 累積次數: ${changeCounter}/${CONFIRM_THRESHOLD} (目前偵測: ${currentCheckResult ? '🟢' : '🔴'})`);
 
-        // 更新記憶中的狀態，等待下一次改變
-        lastStatus = currentStatus;
-    } else {
-        // 狀態沒變，安靜地在後台 log 一下就好
-        console.log(`狀態未變 (${currentStatus ? '正常' : '異常'})，保持安靜...`);
+        // 如果累積次數達到門檻 (例如 3 次)
+        if (changeCounter >= CONFIRM_THRESHOLD) {
+            // 真的改變了！發送通知
+            if (currentCheckResult === true) {
+                await channel.send(`🟢 **服務恢復通知**\n網站 **${WEBSITE_URL}** 已經恢復連線！`);
+            } else {
+                await channel.send(`🔴 **服務中斷警報**\n網站 **${WEBSITE_URL}** 目前無法連線 (已確認 ${CONFIRM_THRESHOLD} 次)。`);
+            }
+
+            // 更新「已確認狀態」並歸零計數器
+            lastConfirmedStatus = currentCheckResult;
+            changeCounter = 0;
+            console.log(`✅ 狀態已確認更新為: ${lastConfirmedStatus ? '🟢' : '🔴'}`);
+        }
+    } 
+    // 情況 B: 這次檢查結果 跟 上次確認的狀態「一樣」
+    else {
+        // 如果中間有偶發的失敗，但現在又正常了，就把計數器歸零 (重置)
+        if (changeCounter > 0) {
+            console.log(`😌 狀態恢復穩定，計數器歸零。`);
+            changeCounter = 0;
+        }
     }
 }
 
-// 當機器人準備好時觸發
 client.once('ready', () => {
-    console.log(`登入成功！機器人身分: ${client.user.tag}`);
-    
-    // 1. 立刻檢查一次
+    console.log(`登入成功！ ${client.user.tag}`);
     checkWebsite();
-
-    // 2. 設定定時器，每隔一段時間檢查一次
     setInterval(checkWebsite, CHECK_INTERVAL);
 });
 
-// 登入機器人
 client.login(TOKEN);
