@@ -1,60 +1,66 @@
-# 💻 網站狀態檢查 Discord 機器人 (OOP System Status Check Discord Bot)
+# 💻 網站狀態檢查 Discord 機器人 (OOP System Status Check Bot)
 
-這個專案是一個基於 Node.js 和 Discord.js 的後台服務，專門用來監控指定網站的連線狀態。當網站狀態發生改變時，它會自動在 Discord 頻道發送通知。
+![Node.js](https://img.shields.io/badge/Node.js-v16+-green.svg)
+![Discord.js](https://img.shields.io/badge/Discord.js-v14-blue.svg)
+![Status](https://img.shields.io/badge/Status-Active-success.svg)
 
-## ✨ V3.0.0 專案核心特色
+這是一個專為監控網站連線狀態而設計的 Discord 機器人專案。它具備高可靠性的後台服務，能夠即時偵測目標網站的連線狀況，並在發生異常或恢復連線時，透過 Discord 頻道發送即時通知。
 
-* **通知彈性 (NEW!):** 可動態設定狀態變更時要標註 (Mention) 的角色。
-* **精準管理 (NEW!):** 可動態調整檢查頻率、暫停/啟動監控，並強制重置狀態。
-* **指令控制:** 使用 Slash Command，可動態更改監控網址。
-* **持久化儲存:** 使用 `config.json` 儲存所有動態設定，重啟不丟失。
-* **抗洗版機制:** 狀態必須連續 3 次保持不變，才會發送通知。
+適用於學校伺服器、個人專案或任何需要 24/7 連線監控的場景。
 
-## ⚙️ 專案配置與部署
+## ✨ V3.0.0 核心功能
 
-### 1. 檔案配置 (`data/config.json`)
+### 🚀 高效監控與管理
+* **動態指令控制:** 透過 Slash Commands (`/`) 即可在 Discord 內即時切換監控網址、調整檢查頻率。
+* **抗洗版機制 (Debounce):** 內建智慧判斷邏輯，狀態須連續確認 3 次才發送通知，有效過濾網路瞬斷造成的假警報。
+* **持久化配置:** 系統設定自動儲存，即使服務重啟或更新，監控目標與歷史紀錄也不會遺失。
 
-此檔案儲存了機器人在運行中會變動的核心設定。
-
-| JSON Key | 說明 | 預設值 |
-| :--- | :--- | :--- |
-| `current_url` | 當前機器人正在監控的網站 URL。 | `string` |
-| `url_history` | 曾監控過的網址列表。 | `array` |
-| `command_channel_id` | 專門用來接收指令和發送通知的頻道 ID。 | `string` |
-| `notification_role_id` | **(NEW!)** 狀態變更時要標註的角色 ID。 | `null` |
-| `check_interval` | **(NEW!)** 網站檢查頻率 (單位：毫秒)。 | `10000` |
-| `monitoring_enabled` | **(NEW!)** 監控總開關 (`true` 或 `false`)。 | `true` |
-
-### 2. 環境變數 (Environment Variables)
-
-請在 Render 的 **Environment** 區塊中設定以下機密變數：
-
-| 環境變數名稱 | 說明 | 來源 |
-| :--- | :--- | :--- |
-| `DISCORD_TOKEN` | 你的 Discord 機器人 Token。 | Discord Developer Portal > Bot |
-| `CLIENT_ID` | 機器人的應用程式 ID，用於註冊斜線指令。 | Discord Developer Portal > General Information |
-| `GUILD_ID` | **(NEW!)** 唯一的目標伺服器 ID，指令將只會部署在這個伺服器上。 | 伺服器設定 (開發者模式複製 ID) |
-
-## 🕹️ 機器人指令系統 (Slash Commands)
-
-所有指令都限制給**伺服器管理員**使用，並必須在 `command_channel_id` 所指定的頻道中操作。
-
-| 指令格式 | 說明 |
-| :--- | :--- |
-| `/ossc set-url <url>` | **動態切換**監控的網站 URL。 |
-| `/ossc set-interval <seconds>` | **(NEW!)** 更改網站檢查頻率 (最少 5 秒)。 |
-| `/ossc notify-role <role>` | **(NEW!)** 設定狀態變更時要標註的角色 (不填角色則清除)。 |
-| `/ossc toggle-monitoring` | **(NEW!)** 暫停或啟動網站監控循環 (Bot 保持運行)。 |
-| `/ossc force-reset` | **(NEW!)** 強制重置 Debounce 計數器，清除上次狀態並立即重新檢查。 |
-| `/ossc-history` | 顯示所有曾經設定過的監控網址歷史紀錄。 |
-| `/ossc-status` | 立即檢查當前監控網站的狀態。 |
+### 🔔 彈性通知系統
+* **角色標註:** 可設定當服務中斷時，自動 Tag 特定管理員角色 (`@Role`)。
+* **即時狀態查詢:** 隨時透過指令查詢當前網站的 HTTP 狀態碼與回應時間。
 
 ---
+
+## 🛠️ 部署與設置指南
+
+本專案設計為部署於 **Render**、**Heroku** 或 **VPS** 等支援 Node.js 的環境。
+
+### 1. 必要環境變數 (Environment Variables)
+
+⚠️ **資安注意：** 以下變數包含敏感資訊，請務必直接設定於雲端平台的 Environment Variables 區塊中，**切勿**將真實數值寫入公開的程式碼或 commit 到 GitHub。
+
+| 變數名稱 (Key) | 描述 |
+| :--- | :--- |
+| `DISCORD_TOKEN` | 機器人的存取權杖 (Bot Token)。 |
+| `CLIENT_ID` | 應用程式 ID (Application ID)，用於註冊斜線指令。 |
+| `GUILD_ID` | 指定部署指令的伺服器 ID (Guild ID)，確保指令安全性。 |
+
+### 2. 專案配置 (`data/config.json`)
+
+系統運行時會自動讀取此設定檔。初次部署時請確保 `data` 資料夾內包含 `config.json`。
+
+---
+
+## 🕹️ 指令列表 (Slash Commands)
+
+為確保安全性，所有管理指令預設限制具有「管理伺服器」權限的成員使用。
+
+| 指令 | 功能說明 |
+| :--- | :--- |
+| `/ossc set-url` | 切換監控目標網址。 |
+| `/ossc set-interval` | 調整檢查頻率 (秒)。 |
+| `/ossc notify-role` | 設定警報時要通知的角色。 |
+| `/ossc toggle-monitoring`| 暫停/啟動監控循環。 |
+| `/ossc force-reset` | 強制重置狀態判斷邏輯。 |
+| `/ossc-status` | 顯示當前即時狀態。 |
+
+---
+
 ## 關於專案與開發
 
-此網站狀態監控系統專案由 **海浪** 主導開發，旨在建構一套自主運行、具備高可靠性的 Discord 通知解決方案。
+此網站狀態監控系統由 **海浪** 主導開發與維護。
 
-本專案於設計與實作過程中，部分藉助 **Gemini [Flash 2.5]** 作為智慧輔助工具，以確保程式碼架構的現代化、專業性及快速迭代能力。
+本專案在架構設計與程式實作過程中，採用 **Gemini [Flash 2.5]** 作為技術輔助工具，旨在結合現代化 AI 技術提升開發效率，建構一套穩定且易於擴充的自動化解決方案。
 
 ---
 *Powered by Node.js & Discord.js*
