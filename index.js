@@ -117,6 +117,44 @@ async function checkWebsite() {
     
     // ... (下面的程式碼都不用動) ...
 
+    const channel = client.channels.cache.get(NOTIFY_CHANNEL_ID);
+    if (!channel) return;
+
+    let currentCheckResult = false; 
+
+    try {
+        const response = await axios.get(WEBSITE_URL, { 
+            timeout: 10000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124 Safari/537.36' }
+        });
+        if (response.status >= 200 && response.status < 300) currentCheckResult = true; 
+    } catch (error) { currentCheckResult = false; }
+
+    if (lastConfirmedStatus === null) {
+        lastConfirmedStatus = currentCheckResult;
+        console.log(`[初始化] 狀態: ${currentCheckResult ? '🟢' : '🔴'}`);
+        return;
+    }
+
+    if (currentCheckResult !== lastConfirmedStatus) {
+        changeCounter++; 
+        console.log(`⚠️ 狀態不穩... ${changeCounter}/${CONFIRM_THRESHOLD}`);
+
+        if (changeCounter >= CONFIRM_THRESHOLD) {
+            let mention = NOTIFY_ROLE_ID ? `<@&${NOTIFY_ROLE_ID}> ` : ''; 
+            if (currentCheckResult === true) {
+                await channel.send(`${mention} 🟢 **服務恢復通知**\n網站 **${WEBSITE_URL}** 已經恢復連線！`);
+            } else {
+                await channel.send(`${mention} 🔴 **服務中斷警報**\n網站 **${WEBSITE_URL}** 目前無法連線。`);
+            }
+            lastConfirmedStatus = currentCheckResult;
+            changeCounter = 0;
+        }
+    } else {
+        if (changeCounter > 0) changeCounter = 0;
+    }
+}
+
 // ==========================================
 // Discord 指令定義
 // ==========================================
