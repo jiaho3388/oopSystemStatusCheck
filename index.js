@@ -252,12 +252,6 @@ client.once('ready', () => {
     rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands })
         .then(() => console.log('✅ 指令註冊完成'))
         .catch(console.error);
-
-    // 🔥 V3.1.0: 定期重啟機制 (每 6 小時)
-    setTimeout(() => {
-        console.log('⏰ 執行定期維護重啟...');
-        process.exit(0);
-    }, 1000 * 60 * 60 * 6);
 });
 
 client.login(DISCORD_TOKEN);
