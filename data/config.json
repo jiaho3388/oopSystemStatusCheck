@@ -1,9 +1,12 @@
 {
-  "current_url": "https://oop.seilab.uk/", 
+  "current_url": "https://oop.seilab.uk/",
   "url_history": [],
+  
   "command_channel_id": "1443437487442628659",
   
+  "notify_channel_id": "1444412085617430528",
+
   "notification_role_id": null,
-  "check_interval": 20000,
+  "check_interval": 10000,
   "monitoring_enabled": true
 }

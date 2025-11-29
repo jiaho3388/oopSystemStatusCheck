@@ -107,47 +107,15 @@ async function checkWebsite() {
     const config = getConfig();
     if (!config || !config.monitoring_enabled) return;
 
-    const { current_url: WEBSITE_URL, command_channel_id: NOTIFY_CHANNEL_ID, notification_role_id: NOTIFY_ROLE_ID } = config;
+    // 🔥 V3.2.0: 分離通知頻道 (讀取 notify_channel_id)
+    // 如果沒設定 notify_channel_id，就暫時用 command_channel_id 頂替
+    const NOTIFY_CHANNEL_ID = config.notify_channel_id || config.command_channel_id;
+    
+    const { current_url: WEBSITE_URL, notification_role_id: NOTIFY_ROLE_ID } = config;
 
     if (!WEBSITE_URL || !NOTIFY_CHANNEL_ID) return;
-
-    const channel = client.channels.cache.get(NOTIFY_CHANNEL_ID);
-    if (!channel) return;
-
-    let currentCheckResult = false; 
-
-    try {
-        const response = await axios.get(WEBSITE_URL, { 
-            timeout: 10000,
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124 Safari/537.36' }
-        });
-        if (response.status >= 200 && response.status < 300) currentCheckResult = true; 
-    } catch (error) { currentCheckResult = false; }
-
-    if (lastConfirmedStatus === null) {
-        lastConfirmedStatus = currentCheckResult;
-        console.log(`[初始化] 狀態: ${currentCheckResult ? '🟢' : '🔴'}`);
-        return;
-    }
-
-    if (currentCheckResult !== lastConfirmedStatus) {
-        changeCounter++; 
-        console.log(`⚠️ 狀態不穩... ${changeCounter}/${CONFIRM_THRESHOLD}`);
-
-        if (changeCounter >= CONFIRM_THRESHOLD) {
-            let mention = NOTIFY_ROLE_ID ? `<@&${NOTIFY_ROLE_ID}> ` : ''; 
-            if (currentCheckResult === true) {
-                await channel.send(`${mention} 🟢 **服務恢復通知**\n網站 **${WEBSITE_URL}** 已經恢復連線！`);
-            } else {
-                await channel.send(`${mention} 🔴 **服務中斷警報**\n網站 **${WEBSITE_URL}** 目前無法連線。`);
-            }
-            lastConfirmedStatus = currentCheckResult;
-            changeCounter = 0;
-        }
-    } else {
-        if (changeCounter > 0) changeCounter = 0;
-    }
-}
+    
+    // ... (下面的程式碼都不用動) ...
 
 // ==========================================
 // Discord 指令定義
